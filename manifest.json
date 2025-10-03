@@ -1,0 +1,59 @@
+{
+  "manifest_version": 3,
+  "name": "Context Keeper",
+  "version": "1.0",
+  "description": "Saves your web surfing context (scroll position, tab information) for later.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "notifications"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "js/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["js/content.js"],
+      "css": ["highlighter.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["highlighter.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "commands": {
+    "save-session": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S"
+      },
+      "description": "Save current session"
+    },
+    "delete-session": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+X"
+      },
+      "description": "Delete current session"
+    }
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  }
+}

@@ -1,0 +1,100 @@
+body {
+  width: 350px;
+  font-family: sans-serif;
+}
+
+h1 {
+  font-size: 18px;
+  text-align: center;
+}
+
+#search-input {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+#filter-buttons {
+  text-align: center;
+  margin: 10px 0;
+}
+
+#filter-buttons button {
+  margin: 0 5px;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+li {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+li:hover {
+  background-color: #f5f5f5;
+}
+
+.session-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.session-title {
+  cursor: pointer;
+  flex-grow: 1;
+}
+
+.delete-button {
+  cursor: pointer;
+  color: red;
+  margin-left: 10px;
+}
+
+.edit-button {
+    cursor: pointer;
+    color: blue;
+    margin-left: 10px;
+}
+
+.progress-container {
+  width: 100%;
+  background-color: #f3f3f3;
+  border-radius: 5px;
+  margin-top: 5px;
+}
+
+.progress-bar {
+  width: 0;
+  height: 10px;
+  background-color: #4caf50;
+  border-radius: 5px;
+}
+
+.time-estimate {
+    font-size: 12px;
+    color: #888;
+}
+
+#session-details-view h2 {
+    font-size: 16px;
+    text-align: center;
+}
+
+#highlight-list li {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.highlight-text {
+    font-style: italic;
+}
+
+.highlight-memo {
+    font-size: 12px;
+    color: #555;
+}

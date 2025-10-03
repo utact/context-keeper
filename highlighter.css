@@ -1,0 +1,12 @@
+.highlighter-tooltip {
+    position: absolute;
+    background-color: black;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    z-index: 10000;
+}
+
+.highlight {
+    background-color: yellow;
+}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Context Keeper</title>
+  <link rel="stylesheet" type="text/css" href="popup.css">
+</head>
+<body>
+  <h1>Context Keeper</h1>
+  <div id="session-list-view">
+    <input type="text" id="search-input" placeholder="Search sessions...">
+    <div id="filter-buttons">
+      <button data-time="900"> &lt;15min</button>
+      <button data-time="1800">&lt;30min</button>
+      <button data-time="-1">All</button>
+    </div>
+    <ul id="session-list"></ul>
+  </div>
+  <div id="session-details-view" style="display: none;">
+    <button id="back-button">Back</button>
+    <h2 id="session-details-title"></h2>
+    <ul id="highlight-list"></ul>
+  </div>
+  <script type="module" src="../js/popup.js"></script>
+</body>
+</html>
