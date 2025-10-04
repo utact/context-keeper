@@ -46,6 +46,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const allItems = await Storage.getAll();
       for (const [key, value] of Object.entries(allItems)) {
         if (value.url && value.url.split('#')[0] === requestUrl) {
+          // If highlights exist, don't update scroll position to a shallower one.
+          if (value.highlights && value.highlights.length > 0 && request.scrollPosition < value.scrollPosition) {
+            await Storage.set(key, { ...value, lastVisited: Date.now() });
+            return; // Exit without updating scroll position
+          }
+
           let updatedSession = {
             ...value,
             scrollPosition: request.scrollPosition,
