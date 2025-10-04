@@ -9,9 +9,12 @@
   <div id="session-list-view">
     <input type="text" id="search-input" placeholder="Search sessions...">
     <div id="filter-buttons">
-      <button data-time="900"> &lt;15min</button>
-      <button data-time="1800">&lt;30min</button>
-      <button data-time="-1">All</button>
+        <button data-time="900">&lt;15min</button>
+        <button data-time="1800">&lt;30min</button>
+    </div>
+    <div class="archive-filter">
+        <input type="checkbox" id="show-archived-checkbox">
+        <label for="show-archived-checkbox">Show Archived</label>
     </div>
     <ul id="session-list"></ul>
   </div>

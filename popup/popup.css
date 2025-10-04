@@ -68,6 +68,16 @@ li:hover {
   margin-top: 5px;
 }
 
+.session-list li.archived,
+.session-list li.pending-archive {
+  opacity: 0.6;
+}
+
+.session-list li.archived .session-title,
+.session-list li.pending-archive .session-title {
+  text-decoration: line-through;
+}
+
 .progress-bar {
   width: 0;
   height: 10px;

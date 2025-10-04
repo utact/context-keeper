@@ -1,12 +1,77 @@
 .highlighter-tooltip {
     position: absolute;
-    background-color: black;
+    background-color: #282828;
     color: white;
-    padding: 5px;
-    border-radius: 5px;
+    padding: 8px;
+    border-radius: 8px;
     z-index: 10000;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
+.highlighter-tooltip button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+.highlighter-tooltip button:hover {
+    background-color: #444;
+}
+
+.color-palette {
+    display: flex;
+    gap: 5px;
+}
+
+.color-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s;
+}
+
+.color-swatch:hover {
+    transform: scale(1.2);
+}
+
+.highlight-yellow { background-color: rgba(255, 255, 0, 0.4); }
+.highlight-pink { background-color: rgba(255, 105, 180, 0.4); }
+.highlight-green { background-color: rgba(144, 238, 144, 0.5); }
+.highlight-blue { background-color: rgba(173, 216, 230, 0.5); }
+
 .highlight {
-    background-color: yellow;
+    position: relative;
+}
+
+.highlight-memo-indicator {
+    border-bottom: 2px dotted #ff6347;
+}
+
+.memo-input-container {
+    display: flex;
+    gap: 5px;
+    margin-left: 5px;
+}
+
+.memo-input {
+    background-color: #333;
+    border: 1px solid #555;
+    color: white;
+    border-radius: 3px;
+    padding: 4px;
+}
+
+.memo-save-btn {
+    background-color: #007bff;
+    padding: 4px 8px;
 }

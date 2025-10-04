@@ -1,34 +1,179 @@
-let tooltip;
+import { deserializeRange, serializeRange } from './range-serializer.js';
 
-async function saveHighlight(highlight) {
-    const url = window.location.href;
-    const data = await chrome.storage.local.get(url);
-    const highlights = (data && data[url] && data[url].highlights) ? data[url].highlights : [];
-    highlights.push(highlight);
-    await chrome.storage.local.set({ [url]: { highlights } });
+let activeTooltip = null;
+
+const HIGHLIGHT_COLORS = ['yellow', 'pink', 'green', 'blue'];
+
+// --- Communication with Background Script ---
+function addHighlight(highlightData) {
+    chrome.runtime.sendMessage({ action: 'addHighlight', highlight: highlightData, url: window.location.href });
 }
 
-async function restoreHighlights() {
-    const url = window.location.href;
-    const data = await chrome.storage.local.get(url);
-    if (!data || !data[url] || !data[url].highlights) return;
-    const highlights = data[url].highlights;
-    for (const highlight of highlights) {
-        try {
-            const range = deserializeRange(highlight.range);
-            const span = document.createElement('span');
-            span.className = 'highlight';
-            span.id = highlight.id;
-            span.appendChild(range.extractContents());
-            range.insertNode(span);
-            if (highlight.memo) {
-                span.title = highlight.memo;
-            }
-        } catch (e) {
-            console.error('Could not restore highlight', e);
+function getSession(callback) {
+    chrome.runtime.sendMessage({ action: 'getSession', url: window.location.href }, (response) => {
+        callback(response ? response.session : null);
+    });
+}
+
+// --- Highlight Creation and Restoration ---
+
+function highlightRange(range, color, id, memo) {
+    const span = document.createElement('span');
+    span.className = `highlight highlight-${color}`;
+    span.id = id;
+    if (memo) {
+        span.classList.add('highlight-memo-indicator');
+        span.title = memo; // Show memo on hover
+    }
+    try {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+    } catch (e) {
+        console.error("Error wrapping range:", e);
+    }
+    return span;
+}
+
+export async function restoreHighlights() {
+    getSession((session) => {
+        if (session && session.highlights) {
+            session.highlights.forEach(h => {
+                try {
+                    const range = deserializeRange(h.range);
+                    if (range) { // Add this check
+                        highlightRange(range, h.color, h.id, h.memo);
+                    }
+                } catch (e) {
+                    console.error('Could not restore highlight', h.id, e);
+                }
+            });
         }
+    });
+}
+
+// --- UI: Tooltip --- 
+
+function createTooltip(range) {
+    removeTooltip(); // Remove any existing tooltip
+
+    const rect = range.getBoundingClientRect();
+    activeTooltip = document.createElement('div');
+    activeTooltip.className = 'highlighter-tooltip';
+    activeTooltip.style.left = `${rect.left + window.scrollX}px`;
+    activeTooltip.style.top = `${rect.top + window.scrollY - activeTooltip.offsetHeight - 10}px`;
+
+    // Color Palette
+    const colorPalette = document.createElement('div');
+    colorPalette.className = 'color-palette';
+    HIGHLIGHT_COLORS.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch';
+        swatch.style.backgroundColor = color;
+        swatch.addEventListener('click', () => {
+            const id = `highlight-${Date.now()}`;
+            const text = range.toString();
+            const serializedRange = serializeRange(range);
+            
+            addHighlight({ id, text, range: serializedRange, color });
+            highlightRange(range, color, id);
+            window.getSelection()?.removeAllRanges();
+            removeTooltip();
+        });
+        colorPalette.appendChild(swatch);
+    });
+
+    // Memo Button
+    const memoButton = document.createElement('button');
+    memoButton.textContent = 'M';
+    memoButton.addEventListener('click', () => showMemoInput(range));
+
+    activeTooltip.appendChild(colorPalette);
+    activeTooltip.appendChild(memoButton);
+    document.body.appendChild(activeTooltip);
+    
+    // Reposition if it's off-screen
+    activeTooltip.style.top = `${rect.top + window.scrollY - activeTooltip.offsetHeight - 5}px`;
+}
+
+function showMemoInput(range) {
+    const selectionText = range.toString();
+    if (!selectionText) return;
+
+    removeTooltip(); // Remove color palette tooltip
+
+    const rect = range.getBoundingClientRect();
+    activeTooltip = document.createElement('div');
+    activeTooltip.className = 'highlighter-tooltip';
+    activeTooltip.style.left = `${rect.left + window.scrollX}px`;
+    activeTooltip.style.top = `${rect.top + window.scrollY - activeTooltip.offsetHeight - 10}px`;
+
+    const inputContainer = document.createElement('div');
+    inputContainer.className = 'memo-input-container';
+
+    const memoInput = document.createElement('input');
+    memoInput.type = 'text';
+    memoInput.className = 'memo-input';
+    memoInput.placeholder = 'Add a memo...';
+
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Save';
+    saveButton.className = 'memo-save-btn';
+    saveButton.addEventListener('click', () => {
+        const memo = memoInput.value;
+        if (memo) {
+            const id = `highlight-${Date.now()}`;
+            const text = range.toString();
+            const color = 'yellow'; // Default color for memos
+            const serializedRange = serializeRange(range);
+
+            addHighlight({ id, text, range: serializedRange, color, memo });
+            highlightRange(range, color, id, memo);
+            window.getSelection()?.removeAllRanges();
+            removeTooltip();
+        }
+    });
+
+    inputContainer.appendChild(memoInput);
+    inputContainer.appendChild(saveButton);
+    activeTooltip.appendChild(inputContainer);
+    document.body.appendChild(activeTooltip);
+    memoInput.focus();
+    
+    // Reposition
+    activeTooltip.style.top = `${rect.top + window.scrollY - activeTooltip.offsetHeight - 5}px`;
+}
+
+function removeTooltip() {
+    if (activeTooltip) {
+        activeTooltip.remove();
+        activeTooltip = null;
     }
 }
+
+// --- Event Listeners ---
+
+document.addEventListener('mouseup', (e) => {
+    // Don't show tooltip if clicking inside an existing one
+    if (activeTooltip && activeTooltip.contains(e.target)) {
+        return;
+    }
+    removeTooltip();
+
+    const selection = window.getSelection();
+    if (selection.isCollapsed || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    if (range.toString().trim().length > 0) {
+        createTooltip(range);
+    }
+});
+
+document.addEventListener('mousedown', (e) => {
+    // Remove tooltip if clicking outside of it, but not on a highlight
+    if (activeTooltip && !activeTooltip.contains(e.target) && !e.target.classList.contains('highlight')) {
+        removeTooltip();
+    }
+});
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'goToHighlight') {
@@ -39,61 +184,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-document.addEventListener('mouseup', (e) => {
-    if (tooltip) {
-        tooltip.remove();
-    }
-
-    const selection = window.getSelection();
-    if (selection.toString().length > 0) {
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        
-        tooltip = document.createElement('div');
-        tooltip.className = 'highlighter-tooltip';
-        tooltip.style.left = `${rect.left + window.scrollX}px`;
-        tooltip.style.top = `${rect.top + window.scrollY - 30}px`;
-        
-        const highlightButton = document.createElement('button');
-        highlightButton.textContent = 'Highlight';
-        highlightButton.addEventListener('click', async () => {
-            const id = `highlight-${Date.now()}`;
-            const text = range.toString();
-            const serializedRange = serializeRange(range);
-            await saveHighlight({ id: id, range: serializedRange, text: text });
-            const span = document.createElement('span');
-            span.className = 'highlight';
-            span.id = id;
-            span.appendChild(range.extractContents());
-            range.insertNode(span);
-            selection.removeAllRanges();
-            tooltip.remove();
-        });
-
-        const memoButton = document.createElement('button');
-        memoButton.textContent = 'Memo';
-        memoButton.addEventListener('click', async () => {
-            const memo = prompt('Enter memo:');
-            if (memo) {
-                const id = `highlight-${Date.now()}`;
-                const text = range.toString();
-                const serializedRange = serializeRange(range);
-                await saveHighlight({ id: id, range: serializedRange, text: text, memo: memo });
-                const span = document.createElement('span');
-                span.className = 'highlight';
-                span.id = id;
-                span.title = memo;
-                span.appendChild(range.extractContents());
-                range.insertNode(span);
-                selection.removeAllRanges();
-                tooltip.remove();
-            }
-        });
-
-        tooltip.appendChild(highlightButton);
-        tooltip.appendChild(memoButton);
-        document.body.appendChild(tooltip);
-    }
-});
-
-restoreHighlights();
+// --- Initial Load ---

@@ -4,6 +4,7 @@ const sessionListView = document.getElementById('session-list-view');
 const sessionDetailsView = document.getElementById('session-details-view');
 const sessionList = document.getElementById('session-list');
 const searchInput = document.getElementById('search-input');
+const showArchivedCheckbox = document.getElementById('show-archived-checkbox');
 const filterButtons = document.getElementById('filter-buttons');
 const backButton = document.getElementById('back-button');
 const sessionDetailsTitle = document.getElementById('session-details-title');
@@ -38,9 +39,13 @@ async function renderSessions(filter = '', timeFilter = -1) {
   const items = await Storage.getAll();
   sessionList.innerHTML = '';
 
+  const showArchived = showArchivedCheckbox.checked;
+
   let filteredKeys = Object.keys(items).filter(key => {
     const item = items[key];
-    if (!item.title) return false;
+    const shouldShow = showArchived ? item.archived : !item.archived;
+    if (!item.title || !shouldShow) return false;
+    
     const title = item.customTitle || item.title;
     return key.startsWith('session-') && title.toLowerCase().includes(filter.toLowerCase());
   });
@@ -55,6 +60,14 @@ async function renderSessions(filter = '', timeFilter = -1) {
   for (const key of filteredKeys) {
     const value = items[key];
     const listItem = document.createElement('li');
+    listItem.dataset.key = key; // Add data-key for easy selection
+
+    if (value.archived) {
+      listItem.classList.add('archived');
+    } else if (value.readCompleteTimestamp) {
+      listItem.classList.add('pending-archive');
+    }
+
 
     const sessionInfo = document.createElement('div');
     sessionInfo.className = 'session-info';
@@ -105,7 +118,9 @@ async function renderSessions(filter = '', timeFilter = -1) {
         progressContainer.className = 'progress-container';
         const progressBar = document.createElement('div');
         progressBar.className = 'progress-bar';
-        const progress = (value.scrollPosition / value.documentHeight) * 100;
+        const progress = value.innerHeight
+          ? Math.min(100, ((value.scrollPosition + value.innerHeight) / value.documentHeight) * 100)
+          : (value.scrollPosition / value.documentHeight) * 100;      
         progressBar.style.width = `${progress}%`;
         progressContainer.appendChild(progressBar);
         listItem.appendChild(progressContainer);
@@ -165,6 +180,11 @@ searchInput.addEventListener('input', (e) => {
   renderSessions(e.target.value);
 });
 
+showArchivedCheckbox.addEventListener('change', () => {
+  renderSessions(searchInput.value);
+});
+
+
 filterButtons.addEventListener('click', (e) => {
     if (e.target.tagName === 'BUTTON') {
         renderSessions(searchInput.value, parseInt(e.target.dataset.time));
@@ -172,6 +192,42 @@ filterButtons.addEventListener('click', (e) => {
 });
 
 backButton.addEventListener('click', showListView);
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'sessionUpdated') {
+    const listItem = document.querySelector(`li[data-key="${request.key}"]`);
+    if (listItem) {
+      const session = request.session;
+      const progressBar = listItem.querySelector('.progress-bar');
+      const timeEstimate = listItem.querySelector('.time-estimate');
+
+      if (progressBar && session.documentHeight) {
+        const progress = session.innerHeight
+          ? Math.min(100, ((session.scrollPosition + session.innerHeight) / session.documentHeight) * 100)
+          : (session.scrollPosition / session.documentHeight) * 100;
+        progressBar.style.width = `${progress}%`;
+      }
+
+      if (timeEstimate) {
+        const time = estimateTime(session);
+        if (time !== -1) {
+          timeEstimate.textContent = `~${Math.ceil(time / 60)} min remaining`;
+        } else {
+          timeEstimate.textContent = '';
+        }
+      }
+
+      // Update visual state (pending, archived)
+      listItem.classList.remove('pending-archive', 'archived');
+      if (session.archived) {
+        listItem.classList.add('archived');
+      } else if (session.readCompleteTimestamp) {
+        listItem.classList.add('pending-archive');
+      }
+    }
+  }
+});
+
 
 showListView();
 renderSessions();
