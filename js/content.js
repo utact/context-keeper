@@ -1,4 +1,4 @@
-import { restoreHighlights } from './highlighter.js';
+import { restoreHighlights, handleHighlighterMessages } from './highlighter.js';
 
 let isUrlTracked = false;
 let lastKnownScrollPosition = 0;
@@ -96,6 +96,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     attemptIntelligentRestore();
   } else if (request.action === 'showToast') {
     showToast(request.message);
+  } else {
+    // Delegate highlighter messages to the highlighter script
+    handleHighlighterMessages(request);
   }
 });
 

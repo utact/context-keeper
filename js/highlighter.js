@@ -231,7 +231,7 @@ document.addEventListener('mousedown', (e) => {
     }
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+export function handleHighlighterMessages(request) {
     if (request.action === 'goToHighlight') {
         const element = document.getElementById(request.highlightId);
         if (element) {
@@ -240,7 +240,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else if (request.action === 'forceRestore') {
         restoreHighlights();
     }
-});
+}
 
 // --- Initial Load ---
 
