@@ -52,23 +52,56 @@ function highlightRange(range, color, id, memo) {
 }
 
 export async function restoreHighlights() {
+    removeRestoreFallbackUI();
     // Clear existing highlights before restoring
     document.querySelectorAll('.highlight').forEach(h => h.outerHTML = h.innerHTML);
 
     getSession((session) => {
         if (session && session.highlights) {
+            let failedCount = 0;
             session.highlights.forEach(h => {
                 try {
                     const range = deserializeRange(h.range);
                     if (range) {
                         highlightRange(range, h.color, h.id, h.memo);
+                    } else {
+                        failedCount++;
                     }
                 } catch (e) {
+                    failedCount++;
                     console.error('Could not restore highlight', h.id, e);
                 }
             });
+
+            if (failedCount > 0) {
+                showRestoreFallbackUI(failedCount);
+            }
         }
     });
+}
+
+function showRestoreFallbackUI(failedCount) {
+    let fallbackUI = document.getElementById('context-keeper-fallback-ui');
+    if (!fallbackUI) {
+        fallbackUI = document.createElement('div');
+        fallbackUI.id = 'context-keeper-fallback-ui';
+        document.body.appendChild(fallbackUI);
+    }
+    fallbackUI.innerHTML = `
+        <span>${failedCount} highlight(s) failed to load.</span>
+        <button id="context-keeper-retry-btn">Retry (Ctrl+Shift+H)</button>
+    `;
+
+    document.getElementById('context-keeper-retry-btn').addEventListener('click', () => {
+        chrome.runtime.sendMessage({ action: 'forceRestore' });
+    });
+}
+
+function removeRestoreFallbackUI() {
+    const fallbackUI = document.getElementById('context-keeper-fallback-ui');
+    if (fallbackUI) {
+        fallbackUI.remove();
+    }
 }
 
 // --- UI: Tooltip --- 
@@ -204,6 +237,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+    } else if (request.action === 'forceRestore') {
+        restoreHighlights();
     }
 });
 

@@ -205,6 +205,8 @@ chrome.commands.onCommand.addListener(async (command) => {
     if (wasDeleted) {
       sendMessageToTab(tab.id, { action: 'showToast', message: 'Session deleted!' });
     }
+  } else if (command === 'retry-restore-highlights') {
+    sendMessageToTab(tab.id, { action: 'forceRestore' });
   }
 });
 

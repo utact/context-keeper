@@ -62,6 +62,11 @@ async function initialLoad() {
 
 autoSaveCheckbox.addEventListener('change', async () => {
     settings.autoSaveOnHighlight = autoSaveCheckbox.checked;
+    // If auto-save is enabled, the highlighter must also be enabled.
+    if (settings.autoSaveOnHighlight) {
+        settings.highlighterEnabled = true;
+        highlighterEnabledCheckbox.checked = true;
+    }
     await Storage.set('settings', settings);
 });
 

@@ -49,6 +49,12 @@
         "default": "Ctrl+Shift+X"
       },
       "description": "Delete current session"
+    },
+    "retry-restore-highlights": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+H"
+      },
+      "description": "Retry restoring highlights on the current page"
     }
   },
   "icons": {

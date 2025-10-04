@@ -92,9 +92,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log(`[DEBUG] Received setScrollPosition. Scrolling to: ${request.scrollPosition}`);
     window.scrollTo(0, request.scrollPosition);
     showToast('스크롤 위치가 복원되었습니다.');
-    // Give lazy-loaded content time to render after scroll
-    setTimeout(restoreHighlights, 200);
+    // Give lazy-loaded content time to render after scroll by polling for document height stability
+    attemptIntelligentRestore();
   } else if (request.action === 'showToast') {
     showToast(request.message);
   }
 });
+
+function attemptIntelligentRestore(maxRetries = 10, interval = 200) {
+    let lastHeight = 0;
+    let stableChecks = 0;
+    let retries = 0;
+
+    const poller = setInterval(() => {
+        const currentHeight = document.body.scrollHeight;
+
+        if (currentHeight === lastHeight) {
+            stableChecks++;
+        } else {
+            stableChecks = 0; // Reset if height changes
+        }
+
+        lastHeight = currentHeight;
+        retries++;
+
+        // If height is stable for 2 checks, or we've run out of retries, restore.
+        if (stableChecks >= 2 || retries >= maxRetries) {
+            clearInterval(poller);
+            console.log(`[DEBUG] Restoring highlights after ${retries} checks.`);
+            restoreHighlights();
+        }
+    }, interval);
+}
