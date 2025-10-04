@@ -1,233 +1,207 @@
 import { Storage } from './storage.js';
 
-const sessionListView = document.getElementById('session-list-view');
-const sessionDetailsView = document.getElementById('session-details-view');
+// --- DOM Elements ---
 const sessionList = document.getElementById('session-list');
 const searchInput = document.getElementById('search-input');
 const showArchivedCheckbox = document.getElementById('show-archived-checkbox');
-const filterButtons = document.getElementById('filter-buttons');
-const backButton = document.getElementById('back-button');
-const sessionDetailsTitle = document.getElementById('session-details-title');
-const highlightList = document.getElementById('highlight-list');
+const sortBySelect = document.getElementById('sort-by');
+const autoSaveCheckbox = document.getElementById('auto-save-on-highlight-checkbox');
+const filterButtonGroup = document.querySelector('.filter-group');
 
-const PIXELS_PER_MINUTE = 1000;
+// --- State ---
+let allSessionItems = [];
+let renderedItemCount = 0;
+const ITEMS_PER_PAGE = 20;
+let settings = {};
 
-function estimateTime(value) {
-  if (!value.documentHeight) return -1;
-  const remainingPixels = value.documentHeight - value.scrollPosition;
-  return remainingPixels / PIXELS_PER_MINUTE * 60; // in seconds
+// --- Helper Functions ---
+
+function estimateTime(session) {
+  if (!session.documentHeight || session.documentHeight === 0) return -1;
+  const readPercentage = (session.scrollPosition + session.innerHeight) / session.documentHeight;
+  const remainingPercentage = 1 - readPercentage;
+  if (remainingPercentage <= 0.15) return 0; // Considered done
+  const pixelsPerMinute = 2000; // Adjusted for a more realistic reading speed
+  const remainingPixels = session.documentHeight * remainingPercentage;
+  return Math.ceil(remainingPixels / pixelsPerMinute);
 }
 
-function getForgettingCurveColor(lastVisited) {
+function getForgettingCurveClass(lastVisited) {
     const days = (Date.now() - lastVisited) / (1000 * 60 * 60 * 24);
-    if (days < 1) return 'green';
-    if (days < 3) return 'orange';
-    return 'red';
+    if (days < 7) return 'title-fresh';
+    if (days < 21) return 'title-stale';
+    return 'title-old';
 }
 
-function showListView() {
-    sessionListView.style.display = 'block';
-    sessionDetailsView.style.display = 'none';
+function getDomain(url) {
+    try {
+        return new URL(url).hostname.replace('www.', '');
+    } catch (e) {
+        return url;
+    }
 }
 
-function showDetailsView() {
-    sessionListView.style.display = 'none';
-    sessionDetailsView.style.display = 'block';
-}
+// --- Main Logic ---
 
-async function renderSessions(filter = '', timeFilter = -1) {
-  const items = await Storage.getAll();
-  sessionList.innerHTML = '';
-
-  const showArchived = showArchivedCheckbox.checked;
-
-  let filteredKeys = Object.keys(items).filter(key => {
-    const item = items[key];
-    const shouldShow = showArchived ? item.archived : !item.archived;
-    if (!item.title || !shouldShow) return false;
+async function initialLoad() {
+    const data = await Storage.getAll();
+    settings = data.settings || { autoSaveOnHighlight: false };
+    allSessionItems = Object.entries(data).filter(([key]) => key.startsWith('session-'));
     
-    const title = item.customTitle || item.title;
-    return key.startsWith('session-') && title.toLowerCase().includes(filter.toLowerCase());
-  });
+    autoSaveCheckbox.checked = settings.autoSaveOnHighlight;
 
-  if (timeFilter !== -1) {
-    filteredKeys = filteredKeys.filter(key => {
-        const time = estimateTime(items[key]);
-        return time !== -1 && time < timeFilter;
-    });
-  }
-
-  for (const key of filteredKeys) {
-    const value = items[key];
-    const listItem = document.createElement('li');
-    listItem.dataset.key = key; // Add data-key for easy selection
-
-    if (value.archived) {
-      listItem.classList.add('archived');
-    } else if (value.readCompleteTimestamp) {
-      listItem.classList.add('pending-archive');
-    }
-
-
-    const sessionInfo = document.createElement('div');
-    sessionInfo.className = 'session-info';
-
-    const title = document.createElement('span');
-    title.className = 'session-title';
-    title.textContent = value.customTitle || value.title;
-    title.style.color = getForgettingCurveColor(value.lastVisited);
-    title.addEventListener('click', async () => {
-      const tabs = await chrome.tabs.query({ url: value.url });
-      if (tabs.length > 0) {
-        const tab = tabs[0];
-        await chrome.tabs.update(tab.id, { active: true });
-        await chrome.windows.update(tab.windowId, { focused: true });
-      } else {
-        await chrome.tabs.create({ url: value.url });
-      }
-    });
-
-    const editButton = document.createElement('span');
-    editButton.className = 'edit-button';
-    editButton.textContent = 'E';
-    editButton.addEventListener('click', () => {
-        const newTitle = prompt('Enter new title:', value.customTitle || value.title);
-        if (newTitle) {
-            Storage.set(key, { ...value, customTitle: newTitle }).then(() => {
-                renderSessions(searchInput.value, timeFilter);
-            });
-        }
-    });
-
-    const deleteButton = document.createElement('span');
-    deleteButton.className = 'delete-button';
-    deleteButton.textContent = 'X';
-    deleteButton.addEventListener('click', async () => {
-      await Storage.remove(key);
-      renderSessions(searchInput.value, timeFilter);
-    });
-
-    sessionInfo.appendChild(title);
-    sessionInfo.appendChild(editButton);
-    sessionInfo.appendChild(deleteButton);
-
-    listItem.appendChild(sessionInfo);
-
-    if (value.documentHeight) {
-        const progressContainer = document.createElement('div');
-        progressContainer.className = 'progress-container';
-        const progressBar = document.createElement('div');
-        progressBar.className = 'progress-bar';
-        const progress = value.innerHeight
-          ? Math.min(100, ((value.scrollPosition + value.innerHeight) / value.documentHeight) * 100)
-          : (value.scrollPosition / value.documentHeight) * 100;      
-        progressBar.style.width = `${progress}%`;
-        progressContainer.appendChild(progressBar);
-        listItem.appendChild(progressContainer);
-
-        const time = estimateTime(value);
-        if (time !== -1) {
-            const timeEstimate = document.createElement('div');
-            timeEstimate.className = 'time-estimate';
-            timeEstimate.textContent = `~${Math.ceil(time / 60)} min remaining`;
-            listItem.appendChild(timeEstimate);
-        }
-    }
-
-    sessionList.appendChild(listItem);
-  }
+    rerenderList();
 }
 
-async function renderSessionDetails(key, session) {
-    sessionDetailsTitle.textContent = session.customTitle || session.title;
-    highlightList.innerHTML = '';
-    const url = session.url;
-    const data = await Storage.get(url);
-    if (data && data.highlights) {
-        for (const highlight of data.highlights) {
-            const listItem = document.createElement('li');
-            const text = document.createElement('div');
-            text.className = 'highlight-text';
-            text.textContent = highlight.text;
-            listItem.appendChild(text);
+autoSaveCheckbox.addEventListener('change', async () => {
+    settings.autoSaveOnHighlight = autoSaveCheckbox.checked;
+    await Storage.set('settings', settings);
+});
 
-            if (highlight.memo) {
-                const memo = document.createElement('div');
-                memo.className = 'highlight-memo';
-                memo.textContent = highlight.memo;
-                listItem.appendChild(memo);
+function rerenderList() {
+    renderedItemCount = 0;
+    sessionList.innerHTML = '';
+    renderPage();
+}
+
+function renderPage() {
+    const filter = searchInput.value.toLowerCase();
+    const showArchived = showArchivedCheckbox.checked;
+    const [sortKey, sortDir] = sortBySelect.value.split('-');
+    const timeFilterButton = filterButtonGroup.querySelector('button.active');
+    const timeFilter = timeFilterButton ? parseInt(timeFilterButton.dataset.time) : -1;
+
+    // 1. Filter
+    const filteredItems = allSessionItems.filter(([, item]) => {
+        const matchesArchive = showArchived ? item.archived : !item.archived;
+        if (!matchesArchive) return false;
+
+        const title = item.customTitle || item.title;
+        const matchesFilter = title.toLowerCase().includes(filter) || getDomain(item.url).toLowerCase().includes(filter);
+        if (!matchesFilter) return false;
+
+        if (timeFilter !== -1) {
+            const estimatedMinutes = estimateTime(item);
+            if (estimatedMinutes === 0 || estimatedMinutes > timeFilter) {
+                return false;
             }
-
-            const goToButton = document.createElement('button');
-            goToButton.textContent = 'Go to highlight';
-            goToButton.addEventListener('click', async () => {
-                const tab = await chrome.tabs.create({ url: url });
-                chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
-                    if (info.status === 'complete' && tabId === tab.id) {
-                        chrome.tabs.sendMessage(tab.id, { action: 'goToHighlight', highlightId: highlight.id });
-                        chrome.tabs.onUpdated.removeListener(listener);
-                    }
-                });
-            });
-            listItem.appendChild(goToButton);
-
-            highlightList.appendChild(listItem);
         }
+
+        return true;
+    });
+
+    // 2. Sort
+    filteredItems.sort(([, a], [, b]) => {
+        let valA, valB;
+        if (sortKey === 'time') {
+            valA = estimateTime(a);
+            valB = estimateTime(b);
+        } else if (sortKey === 'title') {
+            valA = a.customTitle || a.title;
+            valB = b.customTitle || b.title;
+        } else { // lastVisited
+            valA = a.lastVisited;
+            valB = b.lastVisited;
+        }
+
+        if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    // 3. Paginate and Render
+    const itemsToRender = filteredItems.slice(renderedItemCount, renderedItemCount + ITEMS_PER_PAGE);
+    for (const [key, value] of itemsToRender) {
+        const listItem = createSessionCard(key, value);
+        sessionList.appendChild(listItem);
+    }
+    renderedItemCount += itemsToRender.length;
+
+    // 4. "Load More" Button
+    const loadMoreButton = document.getElementById('load-more-btn');
+    if (loadMoreButton) loadMoreButton.remove();
+
+    if (renderedItemCount < filteredItems.length) {
+        const button = document.createElement('button');
+        button.id = 'load-more-btn';
+        button.textContent = 'Load More';
+        button.addEventListener('click', renderPage);
+        sessionList.appendChild(button);
     }
 }
 
-searchInput.addEventListener('input', (e) => {
-  renderSessions(e.target.value);
-});
+function createSessionCard(key, value) {
+    const card = document.createElement('li');
+    card.className = 'session-card';
+    if (value.archived) card.classList.add('archived');
+    else if (value.readCompleteTimestamp) card.classList.add('pending-archive');
 
-showArchivedCheckbox.addEventListener('change', () => {
-  renderSessions(searchInput.value);
-});
+    const progress = value.documentHeight ? Math.min(100, ((value.scrollPosition + value.innerHeight) / value.documentHeight) * 100) : 0;
+    const estimatedMinutes = estimateTime(value);
 
+    card.innerHTML = `
+        <div class="session-header">
+            <div class="session-info">
+                <span class="session-title"></span>
+                <span class="session-domain">${getDomain(value.url)}</span>
+            </div>
+            <div class="session-actions">
+                <button class="edit-btn" title="Edit title">✏️</button>
+                <button class="delete-btn" title="Delete session">🗑️</button>
+            </div>
+        </div>
+        <div class="session-footer">
+            <div class="progress-container">
+                <div class="progress-bar" style="width: ${progress}%;"></div>
+            </div>
+            <div class="time-estimate">${estimatedMinutes > 0 ? `~${estimatedMinutes} min` : 'Done'}</div>
+        </div>
+    `;
 
-filterButtons.addEventListener('click', (e) => {
-    if (e.target.tagName === 'BUTTON') {
-        renderSessions(searchInput.value, parseInt(e.target.dataset.time));
-    }
-});
+    const titleEl = card.querySelector('.session-title');
+    titleEl.textContent = value.customTitle || value.title;
+    titleEl.classList.add(getForgettingCurveClass(value.lastVisited));
 
-backButton.addEventListener('click', showListView);
+    // --- Event Listeners for card actions ---
+    card.querySelector('.session-info').addEventListener('click', async () => {
+        chrome.tabs.create({ url: value.url });
+    });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'sessionUpdated') {
-    const listItem = document.querySelector(`li[data-key="${request.key}"]`);
-    if (listItem) {
-      const session = request.session;
-      const progressBar = listItem.querySelector('.progress-bar');
-      const timeEstimate = listItem.querySelector('.time-estimate');
-
-      if (progressBar && session.documentHeight) {
-        const progress = session.innerHeight
-          ? Math.min(100, ((session.scrollPosition + session.innerHeight) / session.documentHeight) * 100)
-          : (session.scrollPosition / session.documentHeight) * 100;
-        progressBar.style.width = `${progress}%`;
-      }
-
-      if (timeEstimate) {
-        const time = estimateTime(session);
-        if (time !== -1) {
-          timeEstimate.textContent = `~${Math.ceil(time / 60)} min remaining`;
-        } else {
-          timeEstimate.textContent = '';
+    card.querySelector('.edit-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const newTitle = prompt('Enter new title:', value.customTitle || value.title);
+        if (newTitle && newTitle !== (value.customTitle || value.title)) {
+            value.customTitle = newTitle;
+            Storage.set(key, value).then(rerenderList);
         }
-      }
+    });
 
-      // Update visual state (pending, archived)
-      listItem.classList.remove('pending-archive', 'archived');
-      if (session.archived) {
-        listItem.classList.add('archived');
-      } else if (session.readCompleteTimestamp) {
-        listItem.classList.add('pending-archive');
-      }
+    card.querySelector('.delete-btn').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm('Are you sure you want to delete this session?')) {
+            await Storage.remove(key);
+            allSessionItems = allSessionItems.filter(([k]) => k !== key);
+            rerenderList();
+        }
+    });
+
+    return card;
+}
+
+// --- Global Event Listeners ---
+
+searchInput.addEventListener('input', rerenderList);
+showArchivedCheckbox.addEventListener('change', rerenderList);
+sortBySelect.addEventListener('change', rerenderList);
+
+filterButtonGroup.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+        filterButtonGroup.querySelector('button.active').classList.remove('active');
+        e.target.classList.add('active');
+        rerenderList();
     }
-  }
 });
 
+// --- Initial Load ---
 
-showListView();
-renderSessions();
+initialLoad();

@@ -5,19 +5,39 @@
   <link rel="stylesheet" type="text/css" href="popup.css">
 </head>
 <body>
-  <h1>Context Keeper</h1>
-  <div id="session-list-view">
-    <input type="text" id="search-input" placeholder="Search sessions...">
-    <div id="filter-buttons">
-        <button data-time="900">&lt;15min</button>
-        <button data-time="1800">&lt;30min</button>
-    </div>
-    <div class="archive-filter">
-        <input type="checkbox" id="show-archived-checkbox">
-        <label for="show-archived-checkbox">Show Archived</label>
-    </div>
-    <ul id="session-list"></ul>
+  <div id="title-header">
+    <img src="/images/icon48.png" alt="Context Keeper icon" />
+    <h1>Context Keeper</h1>
   </div>
+  <div id="controls">
+    <div class="control-row" id="control-row-1">
+        <div class="filter-group">
+            <label for="sort-by">Sort by:</label>
+            <select id="sort-by">
+                <option value="lastVisited-desc">Newest</option>
+                <option value="lastVisited-asc">Oldest</option>
+                <option value="title-asc">Title</option>
+                <option value="time-asc">Time</option>
+            </select>
+            <button data-time="-1" class="active">All</button>
+            <button data-time="5">&lt;5m</button>
+            <button data-time="10">&lt;10m</button>
+        </div>
+        <!-- Time filter buttons can be added back here if needed -->
+    </div>
+    <div class="control-row" id="control-row-2">
+        <div class="archive-group">
+            <input type="checkbox" id="show-archived-checkbox">
+            <label for="show-archived-checkbox">Show Archived</label>
+        </div>
+        <div class="settings-group">
+            <input type="checkbox" id="auto-save-on-highlight-checkbox">
+            <label for="auto-save-on-highlight-checkbox">Auto-save on highlight</label>
+        </div>
+    </div>
+  </div>
+  <input type="text" id="search-input" placeholder="Search sessions...">
+  <ul id="session-list"></ul>
   <div id="session-details-view" style="display: none;">
     <button id="back-button">Back</button>
     <h2 id="session-details-title"></h2>
