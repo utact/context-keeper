@@ -5,6 +5,8 @@ let lastKnownScrollPosition = 0;
 let lastKnownInnerHeight = 0;
 let lastKnownDocumentHeight = 0;
 
+let scrollSaveTimeout = null;
+
 const activateTracking = () => {
   if (isUrlTracked) return; // Prevent multiple listeners
   isUrlTracked = true;
@@ -12,6 +14,11 @@ const activateTracking = () => {
     lastKnownScrollPosition = window.scrollY;
     lastKnownInnerHeight = window.innerHeight;
     lastKnownDocumentHeight = document.body.scrollHeight;
+
+    // Debounce the save operation
+    clearTimeout(scrollSaveTimeout);
+    scrollSaveTimeout = setTimeout(finalUpdate, 2000); // Save 2s after user stops scrolling
+
   }, { passive: true });
 };
 

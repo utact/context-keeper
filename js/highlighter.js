@@ -26,9 +26,11 @@ function addHighlight(highlightData) {
     chrome.runtime.sendMessage({ action: 'addHighlight', highlight: highlightData, url: window.location.href });
 }
 
-function getSession(callback) {
-    chrome.runtime.sendMessage({ action: 'getSession', url: window.location.href }, (response) => {
-        callback(response ? response.session : null);
+function getSession() {
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: 'getSession', url: window.location.href }, (response) => {
+            resolve(response ? response.session : null);
+        });
     });
 }
 
@@ -56,28 +58,27 @@ export async function restoreHighlights() {
     // Clear existing highlights before restoring
     document.querySelectorAll('.highlight').forEach(h => h.outerHTML = h.innerHTML);
 
-    getSession((session) => {
-        if (session && session.highlights) {
-            let failedCount = 0;
-            session.highlights.forEach(h => {
-                try {
-                    const range = deserializeRange(h.range);
-                    if (range) {
-                        highlightRange(range, h.color, h.id, h.memo);
-                    } else {
-                        failedCount++;
-                    }
-                } catch (e) {
+    const session = await getSession();
+    if (session && session.highlights) {
+        let failedCount = 0;
+        session.highlights.forEach(h => {
+            try {
+                const range = deserializeRange(h.range);
+                if (range) {
+                    highlightRange(range, h.color, h.id, h.memo);
+                } else {
                     failedCount++;
-                    console.error('Could not restore highlight', h.id, e);
                 }
-            });
-
-            if (failedCount > 0) {
-                showRestoreFallbackUI(failedCount);
+            } catch (e) {
+                failedCount++;
+                console.error('Could not restore highlight', h.id, e);
             }
+        });
+
+        if (failedCount > 0) {
+            showRestoreFallbackUI(failedCount);
         }
-    });
+    }
 }
 
 function showRestoreFallbackUI(failedCount) {
