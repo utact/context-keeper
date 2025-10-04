@@ -5,7 +5,6 @@ const sessionList = document.getElementById('session-list');
 const searchInput = document.getElementById('search-input');
 const showArchivedCheckbox = document.getElementById('show-archived-checkbox');
 const sortBySelect = document.getElementById('sort-by');
-const autoSaveCheckbox = document.getElementById('auto-save-on-highlight-checkbox');
 const highlighterEnabledCheckbox = document.getElementById('highlighter-enabled-checkbox');
 const filterButtonGroup = document.querySelector('.filter-group');
 const settingsBtn = document.getElementById('settings-btn');
@@ -48,27 +47,16 @@ function getDomain(url) {
 
 async function initialLoad() {
     const data = await Storage.getAll();
-    settings = data.settings || { autoSaveOnHighlight: false, highlighterEnabled: true };
+    settings = data.settings || { highlighterEnabled: true };
     // Ensure new settings have defaults if they don't exist
     if (settings.highlighterEnabled === undefined) settings.highlighterEnabled = true;
 
     allSessionItems = Object.entries(data).filter(([key]) => key.startsWith('session-'));
     
-    autoSaveCheckbox.checked = settings.autoSaveOnHighlight;
     highlighterEnabledCheckbox.checked = settings.highlighterEnabled;
 
     rerenderList();
 }
-
-autoSaveCheckbox.addEventListener('change', async () => {
-    settings.autoSaveOnHighlight = autoSaveCheckbox.checked;
-    // If auto-save is enabled, the highlighter must also be enabled.
-    if (settings.autoSaveOnHighlight) {
-        settings.highlighterEnabled = true;
-        highlighterEnabledCheckbox.checked = true;
-    }
-    await Storage.set('settings', settings);
-});
 
 highlighterEnabledCheckbox.addEventListener('change', async () => {
     settings.highlighterEnabled = highlighterEnabledCheckbox.checked;

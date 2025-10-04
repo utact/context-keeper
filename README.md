@@ -80,3 +80,7 @@ context-keeper/
 
 - **Commits:** Please adhere to the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 - **Branching:** Follow a simplified Git Flow: branch from `main` for features (`feat/...`) or fixes (`fix/...`), and open a pull request back to `main`.
+
+## Known Limitations
+
+- **Multi-Element Highlighting:** The current highlighting implementation wraps a user's selection in a single `<span>` tag. This works well for selections within a single block element (like a paragraph). However, if a selection spans across multiple block-level elements (e.g., starting in an `<h2>` and ending in a `<p>`), the resulting HTML can be invalid, leading to unpredictable rendering by the browser. A more advanced implementation that uses multiple `<span>`s to wrap each text node within the range is required to perfectly solve this in all cases.

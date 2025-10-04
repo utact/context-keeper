@@ -83,46 +83,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       }
 
-      if (!session) {
-        const settings = (await Storage.get('settings')) || { autoSaveOnHighlight: false };
-        if (settings.autoSaveOnHighlight) {
-            console.log('Auto-creating session for highlight...');
-            const tab = sender.tab;
-
-            const [injectionResult] = await chrome.scripting.executeScript({
-                target: { tabId: tab.id },
-                func: () => ({ 
-                    scrollPosition: window.scrollY, 
-                    documentHeight: document.body.scrollHeight, 
-                    innerHeight: window.innerHeight 
-                }),
-            });
-
-            const newSession = {
-                title: tab.title,
-                url: tab.url,
-                lastVisited: Date.now(),
-                scrollPosition: (injectionResult && injectionResult.result) ? injectionResult.result.scrollPosition : 0,
-                documentHeight: (injectionResult && injectionResult.result) ? injectionResult.result.documentHeight : 0,
-                innerHeight: (injectionResult && injectionResult.result) ? injectionResult.result.innerHeight : 0,
-                highlights: [request.highlight], // Start with the current highlight
-            };
-
-            sessionKey = `session-${Date.now()}`;
-            await Storage.set(sessionKey, newSession);
-            sendMessageToTab(tab.id, { action: 'startTracking' });
-            // No need to continue, the session is created and the highlight is in it.
-            return; 
-        } else {
-            return; // Setting is off, do nothing.
-        }
+      // If a session exists, add the highlight to it.
+      if (session) {
+        const highlights = session.highlights || [];
+        highlights.push(request.highlight);
+        session.highlights = highlights;
+        await Storage.set(sessionKey, session);
       }
-
-      const highlights = session.highlights || [];
-      highlights.push(request.highlight);
-      session.highlights = highlights;
-      
-      await Storage.set(sessionKey, session);
     } else if (request.action === 'getSession') {
         const requestUrl = request.url.split('#')[0];
         const allItems = await Storage.getAll();
