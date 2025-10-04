@@ -23,18 +23,22 @@
             <button data-time="5">&lt;5m</button>
             <button data-time="10">&lt;10m</button>
         </div>
-        <!-- Time filter buttons can be added back here if needed -->
+        <button id="settings-btn" title="Settings">&#x2699;</button>
     </div>
-    <div class="control-row" id="control-row-2">
-        <div class="archive-group">
-            <input type="checkbox" id="show-archived-checkbox">
-            <label for="show-archived-checkbox">Show Archived</label>
-        </div>
-        <div class="settings-group">
-            <input type="checkbox" id="auto-save-on-highlight-checkbox">
-            <label for="auto-save-on-highlight-checkbox">Auto-save on highlight</label>
-        </div>
-    </div>
+  </div>
+  <div id="settings-panel" class="hidden">
+      <div class="settings-group">
+          <input type="checkbox" id="show-archived-checkbox">
+          <label for="show-archived-checkbox">Show Archived</label>
+      </div>
+      <div class="settings-group">
+          <input type="checkbox" id="highlighter-enabled-checkbox">
+          <label for="highlighter-enabled-checkbox">Enable Highlighter</label>
+      </div>
+      <div class="settings-group">
+          <input type="checkbox" id="auto-save-on-highlight-checkbox">
+          <label for="auto-save-on-highlight-checkbox">Auto-save on highlight</label>
+      </div>
   </div>
   <input type="text" id="search-input" placeholder="Search sessions...">
   <ul id="session-list"></ul>

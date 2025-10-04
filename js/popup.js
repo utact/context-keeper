@@ -6,7 +6,10 @@ const searchInput = document.getElementById('search-input');
 const showArchivedCheckbox = document.getElementById('show-archived-checkbox');
 const sortBySelect = document.getElementById('sort-by');
 const autoSaveCheckbox = document.getElementById('auto-save-on-highlight-checkbox');
+const highlighterEnabledCheckbox = document.getElementById('highlighter-enabled-checkbox');
 const filterButtonGroup = document.querySelector('.filter-group');
+const settingsBtn = document.getElementById('settings-btn');
+const settingsPanel = document.getElementById('settings-panel');
 
 // --- State ---
 let allSessionItems = [];
@@ -45,16 +48,25 @@ function getDomain(url) {
 
 async function initialLoad() {
     const data = await Storage.getAll();
-    settings = data.settings || { autoSaveOnHighlight: false };
+    settings = data.settings || { autoSaveOnHighlight: false, highlighterEnabled: true };
+    // Ensure new settings have defaults if they don't exist
+    if (settings.highlighterEnabled === undefined) settings.highlighterEnabled = true;
+
     allSessionItems = Object.entries(data).filter(([key]) => key.startsWith('session-'));
     
     autoSaveCheckbox.checked = settings.autoSaveOnHighlight;
+    highlighterEnabledCheckbox.checked = settings.highlighterEnabled;
 
     rerenderList();
 }
 
 autoSaveCheckbox.addEventListener('change', async () => {
     settings.autoSaveOnHighlight = autoSaveCheckbox.checked;
+    await Storage.set('settings', settings);
+});
+
+highlighterEnabledCheckbox.addEventListener('change', async () => {
+    settings.highlighterEnabled = highlighterEnabledCheckbox.checked;
     await Storage.set('settings', settings);
 });
 
@@ -193,6 +205,10 @@ function createSessionCard(key, value) {
 searchInput.addEventListener('input', rerenderList);
 showArchivedCheckbox.addEventListener('change', rerenderList);
 sortBySelect.addEventListener('change', rerenderList);
+
+settingsBtn.addEventListener('click', () => {
+    settingsPanel.classList.toggle('hidden');
+});
 
 filterButtonGroup.addEventListener('click', (e) => {
     if (e.target.tagName === 'BUTTON') {

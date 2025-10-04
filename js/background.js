@@ -82,18 +82,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (settings.autoSaveOnHighlight) {
             console.log('Auto-creating session for highlight...');
             const tab = sender.tab;
+
+            const [injectionResult] = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => ({ 
+                    scrollPosition: window.scrollY, 
+                    documentHeight: document.body.scrollHeight, 
+                    innerHeight: window.innerHeight 
+                }),
+            });
+
             const newSession = {
                 title: tab.title,
                 url: tab.url,
                 lastVisited: Date.now(),
-                scrollPosition: 0, 
-                documentHeight: 0,
-                innerHeight: 0,
-                highlights: [],
+                scrollPosition: (injectionResult && injectionResult.result) ? injectionResult.result.scrollPosition : 0,
+                documentHeight: (injectionResult && injectionResult.result) ? injectionResult.result.documentHeight : 0,
+                innerHeight: (injectionResult && injectionResult.result) ? injectionResult.result.innerHeight : 0,
+                highlights: [request.highlight], // Start with the current highlight
             };
+
             sessionKey = `session-${Date.now()}`;
-            session = newSession;
+            await Storage.set(sessionKey, newSession);
             sendMessageToTab(tab.id, { action: 'startTracking' });
+            // No need to continue, the session is created and the highlight is in it.
+            return; 
         } else {
             return; // Setting is off, do nothing.
         }

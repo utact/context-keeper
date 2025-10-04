@@ -1,8 +1,25 @@
 import { deserializeRange, serializeRange } from './range-serializer.js';
 
 let activeTooltip = null;
+let settings = { highlighterEnabled: true }; // Default setting
 
 const HIGHLIGHT_COLORS = ['yellow', 'pink', 'green', 'blue'];
+
+// --- Settings Management ---
+
+async function loadSettings() {
+    const data = await chrome.storage.local.get('settings');
+    if (data.settings) {
+        settings = data.settings;
+    }
+}
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'local' && changes.settings) {
+        settings = changes.settings.newValue;
+        console.log('Highlighter settings updated:', settings);
+    }
+});
 
 // --- Communication with Background Script ---
 function addHighlight(highlightData) {
@@ -35,12 +52,15 @@ function highlightRange(range, color, id, memo) {
 }
 
 export async function restoreHighlights() {
+    // Clear existing highlights before restoring
+    document.querySelectorAll('.highlight').forEach(h => h.outerHTML = h.innerHTML);
+
     getSession((session) => {
         if (session && session.highlights) {
             session.highlights.forEach(h => {
                 try {
                     const range = deserializeRange(h.range);
-                    if (range) { // Add this check
+                    if (range) {
                         highlightRange(range, h.color, h.id, h.memo);
                     }
                 } catch (e) {
@@ -164,7 +184,10 @@ document.addEventListener('mouseup', (e) => {
 
     const range = selection.getRangeAt(0);
     if (range.toString().trim().length > 0) {
-        createTooltip(range);
+        // Only show the tooltip if the feature is enabled
+        if (settings.highlighterEnabled) {
+            createTooltip(range);
+        }
     }
 });
 
@@ -185,3 +208,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // --- Initial Load ---
+
+loadSettings();
