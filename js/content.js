@@ -96,11 +96,48 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'startTracking') {
     activateTracking();
   } else if (request.action === 'setScrollPosition') {
-    console.log(`[DEBUG] Received setScrollPosition. Scrolling to: ${request.scrollPosition}`);
-    window.scrollTo(0, request.scrollPosition);
-    showToast('스크롤 위치가 복원되었습니다.');
-    // Give lazy-loaded content time to render after scroll by polling for document height stability
-    attemptIntelligentRestore();
+    const originalScrollPosition = request.scrollPosition;
+    const maxHighlightY = request.maxHighlightY || 0;
+
+    if (maxHighlightY === 0) {
+        window.scrollTo(0, originalScrollPosition);
+        showToast('스크롤 위치가 복원되었습니다.');
+        return;
+    }
+
+    console.log(`[DEBUG] Force-scrolling to maxHighlightY: ${maxHighlightY} to ensure content is loaded.`);
+    window.scrollTo(0, maxHighlightY);
+
+    // --- New Stability Checker ---
+    let lastHeight = 0;
+    let stableChecks = 0;
+    let attempts = 0;
+    const maxAttempts = 50; // 10 seconds timeout
+
+    const stabilityPoller = setInterval(async () => {
+        const currentHeight = document.body.scrollHeight;
+        attempts++;
+
+        if (currentHeight === lastHeight) {
+            stableChecks++;
+        } else {
+            stableChecks = 0; // Reset if height changes
+            lastHeight = currentHeight;
+        }
+
+        // If height is stable for 3 checks, or we've timed out
+        if (stableChecks >= 3 || attempts >= maxAttempts) {
+            clearInterval(stabilityPoller);
+            
+            console.log(`[DEBUG] Page appears stable after ${attempts} attempts. Restoring highlights.`);
+            await restoreHighlights();
+
+            console.log(`[DEBUG] Restoration complete. Returning to original scroll position: ${originalScrollPosition}`);
+            window.scrollTo(0, originalScrollPosition);
+            showToast('하이라이트와 스크롤 위치가 복원되었습니다.');
+        }
+    }, 200);
+
   } else if (request.action === 'showToast') {
     showToast(request.message);
   } else {
@@ -108,29 +145,3 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleHighlighterMessages(request);
   }
 });
-
-function attemptIntelligentRestore(maxRetries = 10, interval = 200) {
-    let lastHeight = 0;
-    let stableChecks = 0;
-    let retries = 0;
-
-    const poller = setInterval(() => {
-        const currentHeight = document.body.scrollHeight;
-
-        if (currentHeight === lastHeight) {
-            stableChecks++;
-        } else {
-            stableChecks = 0; // Reset if height changes
-        }
-
-        lastHeight = currentHeight;
-        retries++;
-
-        // If height is stable for 2 checks, or we've run out of retries, restore.
-        if (stableChecks >= 2 || retries >= maxRetries) {
-            clearInterval(poller);
-            console.log(`[DEBUG] Restoring highlights after ${retries} checks.`);
-            restoreHighlights();
-        }
-    }, interval);
-}

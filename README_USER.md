@@ -1,45 +1,51 @@
-# Context Keeper: Never Lose Your Place on the Web Again
+# Context Keeper: 웹 서핑 중, 더 이상 읽던 곳을 놓치지 마세요
 
-Ever been deep into reading an article, researching a topic across multiple tabs, or halfway through a long document, only to get distracted? When you come back, you waste precious time and mental energy just trying to find your spot. 
+긴 기사를 읽거나 여러 탭에 걸쳐 자료를 조사하던 중, 다른 일로 흐름이 끊겼던 경험이 있으신가요? 다시 돌아왔을 때, 어디까지 읽었는지 찾느라 소중한 시간과 집중력을 낭비하게 됩니다.
 
-**Context Keeper is your brain's save button for the web.** It’s a premium extension, built with care, to ensure you can always pick up right where you left off, effortlessly.
-
----
-
-### ✨ Key Features
-
-*   **📌 Instant Save, Effortless Restore**
-    Leave any page with confidence. Context Keeper automatically remembers your scroll position. When you return, you’ll be taken right back to the exact paragraph you were reading. No more endless scrolling.
-
-*   **🧠 Your Intelligent Reading Dashboard**
-    Don't just save links, save *context*. Our elegant popup is your new mission control for reading:
-    *   **Advanced Sorting & Filtering:** Sort your list by newest, oldest, title, or estimated reading time. Filter to find quick reads under 5 or 10 minutes.
-    *   **Visual Progress:** See how far you are through each saved article at a glance.
-    *   **Forgetting Curve Reminders:** To help you retain information, articles you haven't visited in a while will change color (from green, to yellow, to red), gently nudging you to revisit them.
-
-*   **🎨 Active Knowledge Capture**
-    Don't just be a passive reader. Engage with your content directly on the page:
-    *   **Multi-Color Highlighting:** Select any text to instantly highlight it in one of several colors.
-    *   **Inline Memos:** Attach your thoughts, questions, and ideas directly to your highlights. 
-
-*   **🗂️ Automatic Archiving**
-    Finished an article? Once you scroll to the end, Context Keeper marks it as 'Done' and automatically archives it after 24 hours, keeping your active list clean and focused.
+**Context Keeper는 당신의 웹 브라우저를 위한 '책갈피' 그 이상입니다.** 당신이 마지막으로 읽던 그 지점에서 정확하고 손쉽게 다시 시작할 수 있도록, 세심하게 만들어진 확장 프로그램입니다.
 
 ---
 
-### 🚀 How to Use
+### 주요 기능
 
-1.  **Save Your Place:** On any page you want to save, simply press **`Ctrl+Shift+S`**.
-2.  **View Your Dashboard:** Click the **Context Keeper icon** in your browser toolbar to see all your saved pages.
-3.  **Highlight & Take Notes:** On any webpage, simply **select text** with your mouse to bring up the highlighter tool.
-4.  **Quickly Delete:** Changed your mind? Press **`Ctrl+Shift+X`** to remove the session for the current page.
+- **📌 손쉬운 저장과 자동 복원**
+
+  > 읽던 페이지를 부담 없이 닫으세요. Context Keeper는 당신의 스크롤 위치를 자동으로 기억합니다. 페이지를 다시 열면, 마지막으로 읽던 바로 그 문단으로 부드럽게 이동시켜 줍니다.
+
+- **🧠 지능적인 독서 대시보드**
+
+  > 단순히 링크만 저장하지 말고, '읽기 맥락(Context)'을 저장하세요. 우아한 팝업 UI는 당신의 독서를 위한 새로운 대시보드입니다:
+
+  - **정렬 및 필터링:** 최신순, 오래된순, 제목순, 또는 예상 독서 시간순으로 목록을 정렬하고, 5분 또는 10분 미만의 짧은 글들을 필터링하여 찾아볼 수 있습니다.
+  - **진행률 시각화:** 저장된 각 아티클을 얼마나 읽었는지 한눈에 확인하세요.
+  - **망각 곡선 기반 알림:** 효과적인 학습을 돕기 위해, 오랫동안 방문하지 않은 아티클은 제목 색상이 초록색에서 노란색, 빨간색으로 변하며 자연스러운 복습을 유도합니다.
+
+- **🎨 능동적인 지식 관리 (베타 기능)**
+
+  > 단순한 독서를 넘어, 페이지의 내용과 직접 상호작용하세요:
+
+  - **다색 하이라이트:** 텍스트를 선택하여 여러 색상 중 하나로 즉시 하이라이트할 수 있습니다.
+  - **인라인 메모:** 당신의 생각, 질문, 아이디어를 하이라이트에 직접 메모로 첨부하세요.
+  - **간편한 삭제:** 하이라이트 위에서 마우스 오른쪽 버튼을 클릭하여 나타나는 메뉴로 깔끔하게 삭제할 수 있습니다.
+
+- **🗂️ 자동 보관**
+  > 기사를 다 읽으셨나요? 페이지 끝까지 스크롤하면 '읽음'으로 표시되며, 24시간 후 자동으로 보관되어 현재 읽고 있는 목록을 깔끔하게 유지해 줍니다.
 
 ---
 
-### 🔒 Your Privacy is Paramount
+### 사용 방법
 
-Your data is your own. All your saved sessions, highlights, and notes are stored **locally on your computer** using Chrome's secure storage. This information is never sent to an external server, and we have no access to it. Period.
+1.  **위치 저장:** 저장하고 싶은 페이지에서 단축키 `Ctrl+Shift+S`를 누르세요.
+2.  **대시보드 보기:** 브라우저 툴바의 **Context Keeper 아이콘**을 클릭하여 저장된 모든 페이지를 확인하세요.
+3.  **하이라이트 및 메모:** 웹 페이지에서 마우스로 **텍스트를 선택**하면 하이라이트 도구가 나타납니다.
+4.  **세션 삭제:** 현재 페이지의 세션을 제거하고 싶다면 단축키 `Ctrl+Shift+X`를 누르세요.
 
 ---
 
-**Install Context Keeper today and supercharge your reading productivity!**
+### 개인정보 보호는 최우선입니다
+
+당신의 데이터는 온전히 당신의 것입니다. 저장된 모든 세션, 하이라이트, 메모는 Chrome의 보안 저장소를 사용하여 **당신의 컴퓨터에만 저장됩니다.** 이 정보는 외부 서버로 절대 전송되지 않으며, 개발자도 당신의 데이터에 접근할 수 없습니다.
+
+---
+
+**오늘 Context Keeper를 설치하고 독서 경험의 수준을 한 단계 높여보세요!**
