@@ -2,16 +2,9 @@
   "manifest_version": 3,
   "name": "Context Keeper",
   "version": "1.0",
-  "description": "Saves your web surfing context (scroll position, tab information) for later.",
-  "permissions": [
-    "storage",
-    "tabs",
-    "scripting",
-    "alarms"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "description": "Context Keeper는 마지막에 읽던 위치를 정확히 기억하여 자동으로 복원해주는 스마트한 확장 프로그램입니다.",
+  "permissions": ["storage", "tabs", "scripting", "alarms"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
