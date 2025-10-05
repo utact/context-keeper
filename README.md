@@ -2,85 +2,69 @@
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 
-A sophisticated Chrome extension designed to preserve a user's web surfing context, ensuring a seamless and continuous intellectual workflow.
+웹 서핑 중의 컨텍스트를 보존하여, 끊김 없이 원활한 지적 워크플로우를 보장하도록 설계된 Chrome 확장 프로그램입니다. 안정성과 확장성에 중점을 두고 설계되었습니다.
 
-This project was approached with the discipline and architecture of a significant software initiative, focusing on robustness, scalability, and user experience.
+## 핵심 컨셉
 
-## Core Concepts
+이 확장 프로그램이 해결하는 근본적인 문제는 **인지 부하 감소 (Cognitive Load Reduction)** 입니다. 기술 문서, 연구 논문, 장문 기사와 같은 복잡한 정보 환경을 탐색하는 사용자는 중단 후 컨텍스트를 다시 설정하는 데 상당한 정신적 에너지를 소비합니다. Context Keeper는 웹 페이지에 대한 영구 세션을 생성하여 스크롤 위치를 저장하고, 하이라이팅 및 메모를 통해 능동적인 지식 캡처를 가능하게 하여 이러한 문제를 완화합니다.
 
-The fundamental problem we solve is **cognitive load reduction**. Users navigating complex information landscapes (e.g., technical documentation, research papers, long-form articles) expend significant mental energy re-establishing context after interruptions. Context Keeper mitigates this by creating persistent sessions for web pages, saving not just the scroll position but also enabling active knowledge capture through highlighting and memos.
+## 주요 기능
 
-Our UX philosophy is a hybrid approach:
-- **Keyboard-First for Power Users:** Core actions like saving (`Ctrl+Shift+S`) and deleting (`Ctrl+Shift+X`) are optimized for speed and minimal disruption.
-- **Visual Management:** A comprehensive popup UI serves as a dashboard for organizing, searching, and analyzing saved sessions. It features a card-based layout, user-selectable sorting (by date, title, time), time-based filtering, and pagination for efficient handling of large lists.
+- **자동 스크롤 위치 복원:** 페이지를 다시 방문했을 때 마지막에 읽던 위치로 자동으로 이동합니다.
+- **읽기 진행률 시각화:** 팝업 UI에서 각 페이지의 읽기 진행률을 한눈에 파악할 수 있습니다.
+- **망각 곡선 기반 알림:** 마지막 방문 후 시간이 얼마나 흘렀는지에 따라 제목 색상이 변경되어(초록색 -> 노란색 -> 빨간색) 자연스러운 복습을 유도합니다.
+- **예상 읽기 시간 및 필터링:** 남은 분량을 읽는 데 걸리는 예상 시간을 제공하며, 시간 기준 필터링 기능을 지원합니다.
+- **하이라이트 및 메모 (베타):** 페이지의 중요한 부분에 여러 색상으로 하이라이트를 남기고, 메모를 첨부할 수 있습니다. 이 기능은 현재 베타 버전입니다.
+- **하이라이트 삭제:** 하이라이트 위에서 마우스 오른쪽 버튼을 클릭하여 나타나는 메뉴를 통해 손쉽게 삭제할 수 있습니다.
 
-## Tech Stack
+## 기술 스택
 
-- **Bundler:** Vite (`^7.1.9`) - For a fast, modern build process.
-- **Language:** JavaScript (ESM) - Leveraging modern JS features.
-- **Target:** Chrome Manifest V3 - Adhering to the latest extension platform standards.
-- **Core APIs:** `chrome.storage`, `chrome.commands`, `chrome.tabs`, `chrome.scripting`
+- **번들러:** Vite
+- **언어:** JavaScript (ESM)
+- **타겟:** Chrome Manifest V3
+- **핵심 API:** `chrome.storage`, `chrome.commands`, `chrome.tabs`, `chrome.scripting`
 
-## Project Structure
-
-The codebase is organized to clearly separate concerns between the different components of a Chrome extension.
+## 프로젝트 구조
 
 ```
 context-keeper/
-├── dist/                # Build output, this is loaded into Chrome
-├── images/              # Static icon assets
-├── js/                  # Core JavaScript source files
-│   ├── background.js    # Service worker: handles state, alarms, context menus
-│   ├── content.js       # Entry point for scripts injected into web pages
-│   ├── highlighter.js   # DOM manipulation logic for highlighting/memos
-│   ├── popup.js         # UI logic for the extension popup
-│   ├── range-serializer.js # Robust XPath serialization for highlights
-│   └── storage.js       # Abstraction layer for chrome.storage.local
-├── popup/               # HTML and CSS for the popup
+├── dist/                # 빌드 결과물이 담기는 디렉토리
+├── images/              # 아이콘 등 정적 이미지 에셋
+├── js/                  # 핵심 자바스크립트 소스 파일
+│   ├── background.js    # 서비스 워커: 상태, 알람, 컨텍스트 메뉴 처리
+│   ├── content.js       # 웹 페이지에 주입되는 스크립트의 진입점
+│   ├── highlighter.js   # 하이라이팅/메모를 위한 DOM 조작 로직
+│   ├── popup.js         # 확장 프로그램 팝업 UI 로직
+│   ├── range-serializer.js # 하이라이트 위치 저장을 위한 XPath 직렬화
+│   └── storage.js       # chrome.storage.local 추상화 레이어
+├── popup/               # 팝업 UI를 위한 HTML 및 CSS
 ├── .gitignore
-├── manifest.json        # The extension manifest
+├── manifest.json        # 확장 프로그램 매니페스트
 ├── package.json
-└── vite.config.js       # Vite build configuration
+└── vite.config.js       # Vite 빌드 설정
 ```
 
-## Development Workflow
+## 개발 워크플로우
 
-### Prerequisites
+### 전제 조건
 - Node.js (v18+)
 - npm
 
-### Getting Started
+### 시작하기
 
-1.  **Install Dependencies:**
+1.  **의존성 설치:**
     ```bash
     npm install
     ```
 
-2.  **Build for Production:**
-    The build process, powered by Vite, bundles all necessary scripts and assets into the `/dist` directory.
+2.  **프로덕션 빌드:**
     ```bash
     npm run build
     ```
 
-3.  **Loading the Extension:**
-    - Open Chrome and navigate to `chrome://extensions`.
-    - Enable "Developer mode".
-    - Click "Load unpacked".
-    - Select the `dist` directory from this project.
+3.  **확장 프로그램 로드:**
+    - Chrome에서 `chrome://extensions`로 이동합니다.
+    - "개발자 모드"를 활성화합니다.
+    - "압축 해제된 확장 프로그램을 로드합니다"를 클릭합니다.
+    - 이 프로젝트의 `dist` 디렉토리를 선택합니다.
 
-## Key Architectural Decisions
-
-1.  **Bundling Strategy:** All content scripts (`content.js`, `highlighter.js`, `range-serializer.js`) are bundled into a single `dist/js/content.js` file. This is managed by Vite by defining a single entry point in `vite.config.js` and using ES module `import` statements to create a dependency graph. This avoids issues with module loading in the content script environment.
-
-2.  **Highlight Serialization:** To ensure highlights are restored reliably across page loads and on dynamic websites, we do not save the selected text itself as an anchor. Instead, we serialize the DOM `Range` object to a robust XPath. The `range-serializer.js` module is specifically designed to handle both Element nodes and Text nodes, making it resilient to changes in page structure.
-
-3.  **State Management:** All application state (saved sessions, highlights, settings) is stored in `chrome.storage.local`. The `storage.js` module provides a simple promise-based API for all storage interactions. The `background.js` service worker acts as the central authority for state modification.
-
-## Contribution Guidelines
-
-- **Commits:** Please adhere to the [Conventional Commits](https://www.conventionalcommits.org/) specification.
-- **Branching:** Follow a simplified Git Flow: branch from `main` for features (`feat/...`) or fixes (`fix/...`), and open a pull request back to `main`.
-
-## Known Limitations
-
-- **Multi-Element Highlighting:** The current highlighting implementation wraps a user's selection in a single `<span>` tag. This works well for selections within a single block element (like a paragraph). However, if a selection spans across multiple block-level elements (e.g., starting in an `<h2>` and ending in a `<p>`), the resulting HTML can be invalid, leading to unpredictable rendering by the browser. A more advanced implementation that uses multiple `<span>`s to wrap each text node within the range is required to perfectly solve this in all cases.

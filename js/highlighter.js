@@ -40,10 +40,64 @@ function highlightRange(range, color, id, memo) {
     const span = document.createElement('span');
     span.className = `highlight highlight-${color}`;
     span.id = id;
+
     if (memo) {
         span.classList.add('highlight-memo-indicator');
         span.title = memo; // Show memo on hover
     }
+
+    // Right-click to show delete menu
+    span.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Remove any existing custom context menu
+        removeCustomContextMenu();
+
+        const menu = document.createElement('div');
+        menu.id = 'highlight-context-menu';
+        menu.style.position = 'absolute';
+        menu.style.top = `${e.pageY}px`;
+        menu.style.left = `${e.pageX}px`;
+        menu.style.backgroundColor = 'white';
+        menu.style.border = '1px solid #ccc';
+        menu.style.borderRadius = '4px';
+        menu.style.padding = '5px 0';
+        menu.style.zIndex = '10000';
+
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete Highlight';
+        deleteButton.style.display = 'block';
+        deleteButton.style.width = '100%';
+        deleteButton.style.padding = '5px 15px';
+        deleteButton.style.border = 'none';
+        deleteButton.style.backgroundColor = 'transparent';
+        deleteButton.style.cursor = 'pointer';
+        deleteButton.style.textAlign = 'left';
+
+        deleteButton.onmouseover = () => deleteButton.style.backgroundColor = '#f0f0f0';
+        deleteButton.onmouseout = () => deleteButton.style.backgroundColor = 'transparent';
+
+        deleteButton.addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete this highlight?')) {
+                chrome.runtime.sendMessage({
+                    action: 'deleteHighlight',
+                    url: window.location.href,
+                    highlightId: id
+                });
+                const childNodes = Array.from(span.childNodes);
+                span.replaceWith(...childNodes);
+            }
+            removeCustomContextMenu();
+        });
+
+        menu.appendChild(deleteButton);
+        document.body.appendChild(menu);
+
+        // Add a listener to close the menu when clicking elsewhere
+        document.addEventListener('click', removeCustomContextMenu, { once: true });
+    });
+
     try {
         span.appendChild(range.extractContents());
         range.insertNode(span);
@@ -53,55 +107,36 @@ function highlightRange(range, color, id, memo) {
     return span;
 }
 
+function removeCustomContextMenu() {
+    const existingMenu = document.getElementById('highlight-context-menu');
+    if (existingMenu) {
+        existingMenu.remove();
+    }
+}
+
 export async function restoreHighlights() {
-    removeRestoreFallbackUI();
     // Clear existing highlights before restoring
-    document.querySelectorAll('.highlight').forEach(h => h.outerHTML = h.innerHTML);
+    document.querySelectorAll('.highlight').forEach(h => {
+        const parent = h.parentNode;
+        if (!parent) return;
+        while(h.firstChild) {
+            parent.insertBefore(h.firstChild, h);
+        }
+        parent.removeChild(h);
+    });
 
     const session = await getSession();
     if (session && session.highlights) {
-        let failedCount = 0;
-        session.highlights.forEach(h => {
+        for (const h of session.highlights) {
             try {
-                const range = deserializeRange(h.range);
+                const range = await deserializeRange(h.range);
                 if (range) {
                     highlightRange(range, h.color, h.id, h.memo);
-                } else {
-                    failedCount++;
                 }
             } catch (e) {
-                failedCount++;
-                console.error('Could not restore highlight', h.id, e);
+                console.warn('Could not restore highlight', {id: h.id, range: h.range}, e);
             }
-        });
-
-        if (failedCount > 0) {
-            showRestoreFallbackUI(failedCount);
         }
-    }
-}
-
-function showRestoreFallbackUI(failedCount) {
-    let fallbackUI = document.getElementById('context-keeper-fallback-ui');
-    if (!fallbackUI) {
-        fallbackUI = document.createElement('div');
-        fallbackUI.id = 'context-keeper-fallback-ui';
-        document.body.appendChild(fallbackUI);
-    }
-    fallbackUI.innerHTML = `
-        <span>${failedCount} highlight(s) failed to load.</span>
-        <button id="context-keeper-retry-btn">Retry (Ctrl+Shift+H)</button>
-    `;
-
-    document.getElementById('context-keeper-retry-btn').addEventListener('click', () => {
-        chrome.runtime.sendMessage({ action: 'forceRestore' });
-    });
-}
-
-function removeRestoreFallbackUI() {
-    const fallbackUI = document.getElementById('context-keeper-fallback-ui');
-    if (fallbackUI) {
-        fallbackUI.remove();
     }
 }
 
@@ -127,8 +162,9 @@ function createTooltip(range) {
             const id = `highlight-${Date.now()}`;
             const text = range.toString();
             const serializedRange = serializeRange(range);
+            const yCoord = range.getBoundingClientRect().bottom + window.scrollY;
             
-            addHighlight({ id, text, range: serializedRange, color });
+            addHighlight({ id, text, range: serializedRange, color, y: yCoord });
             highlightRange(range, color, id);
             window.getSelection()?.removeAllRanges();
             removeTooltip();
@@ -238,8 +274,6 @@ export function handleHighlighterMessages(request) {
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-    } else if (request.action === 'forceRestore') {
-        restoreHighlights();
     }
 }
 

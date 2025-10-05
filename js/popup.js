@@ -47,13 +47,15 @@ function getDomain(url) {
 
 async function initialLoad() {
     const data = await Storage.getAll();
-    settings = data.settings || { highlighterEnabled: true };
+    settings = data.settings || { highlighterEnabled: true, sortBy: 'lastVisited-desc' };
     // Ensure new settings have defaults if they don't exist
     if (settings.highlighterEnabled === undefined) settings.highlighterEnabled = true;
+    if (settings.sortBy === undefined) settings.sortBy = 'lastVisited-desc';
 
     allSessionItems = Object.entries(data).filter(([key]) => key.startsWith('session-'));
     
     highlighterEnabledCheckbox.checked = settings.highlighterEnabled;
+    sortBySelect.value = settings.sortBy;
 
     rerenderList();
 }
@@ -197,10 +199,36 @@ function createSessionCard(key, value) {
 
 searchInput.addEventListener('input', rerenderList);
 showArchivedCheckbox.addEventListener('change', rerenderList);
-sortBySelect.addEventListener('change', rerenderList);
+
+sortBySelect.addEventListener('change', async () => {
+    settings.sortBy = sortBySelect.value;
+    await Storage.set('settings', settings);
+    rerenderList();
+});
+
+async function updateStorageUsage() {
+    if (chrome.storage && chrome.storage.local) {
+        const bytesInUse = await chrome.storage.local.getBytesInUse(null);
+        const totalQuota = chrome.storage.local.QUOTA_BYTES;
+        const usagePercent = ((bytesInUse / totalQuota) * 100).toFixed(2);
+        const usedMb = (bytesInUse / (1024 * 1024)).toFixed(2);
+        const totalMb = (totalQuota / (1024 * 1024)).toFixed(0);
+
+        const storageInfoEl = document.getElementById('storage-info');
+        if (storageInfoEl) {
+             storageInfoEl.innerHTML = `
+                <label>Storage:</label>
+                <span>${usedMb}MB / ${totalMb}MB (${usagePercent}%) used</span>
+            `;
+        }
+    }
+}
 
 settingsBtn.addEventListener('click', () => {
     settingsPanel.classList.toggle('hidden');
+    if (!settingsPanel.classList.contains('hidden')) {
+        updateStorageUsage();
+    }
 });
 
 filterButtonGroup.addEventListener('click', (e) => {

@@ -31,6 +31,11 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // --- Message Listener for events from content scripts ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const main = async () => {
+    const calculateMaxY = (highlights) => {
+        if (!highlights || highlights.length === 0) return 0;
+        return Math.max(...highlights.map(h => h.y || 0));
+    };
+
     if (request.action === 'isUrlTracked') {
       const requestUrl = request.url.split('#')[0];
       const allItems = await Storage.getAll();
@@ -88,7 +93,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const highlights = session.highlights || [];
         highlights.push(request.highlight);
         session.highlights = highlights;
+        session.maxHighlightY = calculateMaxY(session.highlights);
         await Storage.set(sessionKey, session);
+      }
+    } else if (request.action === 'deleteHighlight') {
+      const requestUrl = request.url.split('#')[0];
+      const allItems = await Storage.getAll();
+      let sessionKey = null;
+      let session = null;
+
+      for (const [key, value] of Object.entries(allItems)) {
+        if (value.url && value.url.split('#')[0] === requestUrl) {
+          sessionKey = key;
+          session = value;
+          break;
+        }
+      }
+
+      if (session && session.highlights) {
+        const highlightIndex = session.highlights.findIndex(h => h.id === request.highlightId);
+        if (highlightIndex > -1) {
+          session.highlights.splice(highlightIndex, 1);
+          session.maxHighlightY = calculateMaxY(session.highlights);
+          await Storage.set(sessionKey, session);
+        }
       }
     } else if (request.action === 'getSession') {
         const requestUrl = request.url.split('#')[0];
@@ -172,8 +200,6 @@ chrome.commands.onCommand.addListener(async (command) => {
     if (wasDeleted) {
       sendMessageToTab(tab.id, { action: 'showToast', message: 'Session deleted!' });
     }
-  } else if (command === 'retry-restore-highlights') {
-    sendMessageToTab(tab.id, { action: 'forceRestore' });
   }
 });
 
@@ -202,7 +228,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         console.log(`[DEBUG] Sending setScrollPosition message with position: ${sessionData.scrollPosition}`);
         sendMessageToTab(tabId, {
           action: 'setScrollPosition',
-          scrollPosition: sessionData.scrollPosition
+          scrollPosition: sessionData.scrollPosition,
+          maxHighlightY: sessionData.maxHighlightY || 0
         });
       }
     } else {
